@@ -175,10 +175,11 @@ struct usb_to_osd_t{
 //      return (ch == OK);
 //   }
 
+   // actually 3 params
    int32_t get_board_max_flash_size()
    {
-      uint8_t const cmd [] = {INFO_FLASH_SIZE, EOC};
-      send(cmd,2);
+      uint8_t const cmd [] = { GET_DEVICE, INFO_FLASH_SIZE, EOC};
+      send(cmd,3);
       int32_t result = recv_int();
       getSync();
       return result;
@@ -221,7 +222,8 @@ struct usb_to_osd_t{
 
    void upload( std::string const & filename)
    {
-    //  firmware.board_flash_size = this->get_board_max_flash_size();
+      firmware.board_flash_size = this->get_board_max_flash_size();
+
       std::ifstream in( filename, std::ios_base::in | std::ios_base::binary);
       
       if ( !in || !in.good() ){
@@ -240,8 +242,8 @@ struct usb_to_osd_t{
          }
       }
 
-     // firmware.expected_crc = px4Uploader::crc(firmware.imagebyte,firmware.board_flash_size);
-      
+      firmware.expected_crc = px4Uploader::crc(firmware.imagebyte,firmware.board_flash_size);
+
       uint8_t arr [PROG_MULTI_MAX]; 
       int32_t image_bytes_left = firmware.imagebyte.size();
       int32_t image_idx = 0;
@@ -263,10 +265,12 @@ struct usb_to_osd_t{
          throw std::runtime_error("infile Failed while uploading bin file");
       }
 
-//      uint32_t board_crc = get_board_crc();
-//      if ( firmware.expected_crc != board_crc){
-//         std::cout << "WARNING crc doesnt match\n";
-//      }
+      uint32_t board_crc = get_board_crc();
+      if ( firmware.expected_crc != board_crc){
+         std::cout << "WARNING crc doesnt match\n";
+      }else{
+         std::cout << "firmware verified\n";
+      }
    }
 
    void erase()
@@ -313,7 +317,7 @@ int main()
       sp1.erase();
       std::cout << "erased\n";
       std::cout << "uploading...\n";
-      sp1.upload("/home/andy/cpp/projects/playuav/osd_comm/blinky.bin");
+      sp1.upload("/home/andy/cpp/projects/osd_comm/px4fw.bin");
       std::cout << "uploaded\n";
       
       std::cout << "rebooting...\n";
