@@ -161,6 +161,7 @@ struct usb_to_osd_t{
 
    void sync()
    {
+      m_sp.flush();
       uint8_t const sync_cmd [] = {GET_SYNC, EOC};
       send(sync_cmd,2);
       getSync();
@@ -205,6 +206,7 @@ struct usb_to_osd_t{
          uint8_t ch;
          recv(&ch);
       }
+      m_sp.flush();
       while (t() < quan::time::ms{1000}) {;}
       if( !m_sp.good()){
          throw std::runtime_error("reset to bootloader : couldnt connect");
@@ -275,7 +277,8 @@ struct usb_to_osd_t{
 
    void erase()
    {
-     // sync();
+      m_sp.flush();
+      sync();
       uint8_t arr []= {CHIP_ERASE,EOC};
       send(arr,2);
       quan::timer<> t;
@@ -283,6 +286,7 @@ struct usb_to_osd_t{
          if (m_sp.in_avail() > 0 )
          break;
       }
+      
       getSync();
       
    }
@@ -304,14 +308,36 @@ private:
    }
 };
 
+// TODO
+// *algorithm*
+// look for the "some signature" of the PlayUAV OSD on all the ACM ports
+// If successfully connected then call reset to bootloader on it.
+// try reading it after
+// if successful then there was no firmware and it is already in bootloader
+
+// if it fails then that is because it has reset itself
+// so look for the signature o all ports again
+// then do the programme part on that port
 
 int main()
 {
    try{
 
-      std::cout<< "PlayUav firmware loader Hack!\n";
-      
-      usb_to_osd_t sp1{"/dev/ttyACM0"};
+// ...getting there. 
+     // if good firmware is loaded which can do a reset
+     // then on reset enumeration 
+     // gives a new file name to the port
+      // This only works if valid firmware is currently loaded
+// Tested and works one time so far !
+       std::cout<< "PlayUav firmware loader Hack!\n";
+// usually the first port
+       usb_to_osd_t sp{"/dev/ttyACM0"};
+       sp.sync();
+       sp.reset_to_bootloader();
+// let us not close the dead port to save confusion!
+//################################
+// usually the second port
+      usb_to_osd_t sp1{"/dev/ttyACM1"};
       sp1.sync();
       std::cout << "erasing...\n";
       sp1.erase();
