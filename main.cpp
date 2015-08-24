@@ -316,13 +316,69 @@ private:
    }
 };
 
+/*
+std::cout << "******************************\n";
+   std::cout << "*                            *\n";
+   std::cout << "*  Quantracker Air OSD       *\n";
+   std::cout << "*  Params setup v1.1         *\n";
+   std::cout << "*  Copyright (C) Andy Little *\n";
+   std::cout << "*  www.zoomworks.org         *\n";
+   std::cout << "*  Jul 2015                  *\n";
+   std::cout << "*                            *\n";
+   std::cout << "******************************\n\n";
+   
+   if (argc != 5) {
+      std::cout << "usage " << argv[0] << " -read|-write <filename> -port <portname>\n";
+      return EXIT_FAILURE;
+   }
 
-// todo args
-   // prog  write  binfile 
-// could do read and verify too
-int main()
+   if (!strncmp (argv[1], "-read", 6)) {
+      
+      return flash_read(argv[2],argv[4]);
+   }
+
+   if ( (!strncmp (argv[1], "-write", 7)) && ( !strncmp (argv[3], "-port",6) ) ){
+
+      return flash_write (argv[2],argv[4]);
+   } 
+}
+
+*/
+
+void usage(const char* app_name)
 {
-   std::cout << "PlayUAV OSD uploader hack\n";
+   std::cout << "usage :\n";
+   std::cout << "1) write firmware to PlayUAV OSD board from <from_filename>\n\n";
+   std::cout << "      " << app_name << " -write <from_filename>\n\n";
+   std::cout << "(TODO: read, verify, erase_all, erase_sectors)\n\n";
+}
+int main(int argc, const char* argv[])
+{
+   std::cout << "\n\n";
+   std::cout << "   ******************************\n";
+   std::cout << "   *                            *\n";
+   std::cout << "   *  PlayUAV OSD               *\n";
+   std::cout << "   *  Firmware Utility v1.0     *\n";
+   std::cout << "   *  Copyright (C) Andy Little *\n";
+   std::cout << "   *  www.zoomworks.org         *\n";
+   std::cout << "   *  Aug 2015                  *\n";
+   std::cout << "   *                            *\n";
+   std::cout << "   ******************************\n\n";
+
+   if ( !( ( argc == 3) && (!strncmp(argv[1], "-write", 6)) ) ) {
+      usage(argv[0]);
+      return EXIT_FAILURE;
+   }
+
+   {
+      std::ifstream test(argv[2]);
+
+      if (!test){
+         std::cout << "Couldnt open binary input file : \"" << argv[2] << "\"\n";
+         return EXIT_FAILURE;
+      }
+   }
+   std:: cout << "preparing to upload \"" << argv[2] << "\"\n";
    std::cout << "looking for likely ports...\n";
    try{
       // assume 5 ttyACM ports for now ACM0 to ACM4
@@ -362,7 +418,7 @@ int main()
             // port was re-enumerated hence dead so look for the new re-enumerated port
             std::cout << "We were re-enumerated\n";
             delete usb_to_osd; usb_to_osd = nullptr;
-            for ( uint8_t i = 0; i < num_acm_ports; ++i){
+            for ( uint32_t i = 0; i < num_acm_ports; ++i){
                char int_name [4] = {'\0'};
                quan::itoasc(i,int_name,10);
                port_name = "/dev/ttyACM" + std::string{int_name};
@@ -371,12 +427,14 @@ int main()
                   usb_to_osd->sync();
                }catch(std::exception & e){
                  // any exception means try another port
-                 std::cout << "OK so we arent on " << port_name << " then!\n";
+                 if ( (i + 1U) <  num_acm_ports){
+                  std::cout << "OK! ... continuing to try other Ports\n";
+                 }
                  delete usb_to_osd; usb_to_osd = nullptr;
                }
                // if here we reckon usb_to_osd is still good!
                if ( usb_to_osd != nullptr ){
-                  std:: cout << "After re-enumeration we are on " << port_name <<'\n';
+                  std:: cout << "OK! ... After re-enumeration we are on " << port_name <<'\n';
                   break;
                }
             }
@@ -394,18 +452,18 @@ int main()
       }
       assert((usb_to_osd != nullptr) && "something bad happened");
       // continue with programming algorithm
-      std::cout << "erasing ... (Please wait) ...\n";
+      std::cout << "erasing... (Please wait)...\n";
       usb_to_osd->erase();
-      std::cout << "board erased\n";
-      std::cout << "uploading firmware...\n";
+      std::cout << "OK! ... board erased\n";
+      std::cout << "uploading firmware... (Please wait)...\n";
       usb_to_osd->upload("/home/andy/cpp/projects/osd_comm/px4fw.bin");
      // usb_to_osd->upload("/home/andy/cpp/projects/osd_comm/PlayuavOSD.bin");
-      std::cout << "firmware uploaded\n";
+      std::cout << "OK! ... firmware uploaded\n";
       std::cout << "rebooting the board...\n";
       usb_to_osd->reboot_to_app();
-      std::cout << "board rebooted\n";
+      std::cout << "OK! ... board rebooted\n";
       delete usb_to_osd;
-      std::cout << "firmware uploaded successfully\n";
+      std::cout << "OK! ... firmware uploaded successfully\n";
       return EXIT_SUCCESS;
    }catch (std::exception & e){
       std::cout << "Exception '" <<  e.what() << "'\n";
