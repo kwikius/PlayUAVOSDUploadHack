@@ -9,6 +9,8 @@
 #include <vector>
 #include <quan/min.hpp>
 #include <quan/utility/timer.hpp>
+#include <quan/conversion/itoa.hpp>
+#include <cassert>
 
 namespace px4Uploader{
 
@@ -83,7 +85,7 @@ struct usb_to_osd_t{
    };
 
    // code for the app to request a reboot to bootlaoder
-   // also works in PlayUAV version of the  bootloader
+   // also works in PlayUAV version of the  bootloader itself as a nop
    static constexpr uint8_t PROTO_BL_UPLOAD = 0x55;
 
    bool connected()
@@ -101,7 +103,6 @@ struct usb_to_osd_t{
    {
       throw_if_not_connected();
       m_sp.write(arr,len) ;
-      
    }
 
    void recv(uint8_t * arr, size_t count = 1)
@@ -111,13 +112,7 @@ struct usb_to_osd_t{
          throw std::runtime_error("usb_to_osd read failed");
       }
    }
-//
-//   void flush()
-//   {
-//      m_sp.flush();
-//   }
 
-   // endiannness?
    int32_t recv_int()
    {
       union{
@@ -143,7 +138,7 @@ struct usb_to_osd_t{
       uint8_t ch;
       recv(& ch);
       if ( ch != INSYNC){
-         std::cout << " ch = " << (int) ch <<'\n';
+        // std::cout << " ch = " << (int) ch <<'\n';
          throw std::runtime_error("get_sync : expected INSYNC");
       }
       recv(&ch);
@@ -161,22 +156,11 @@ struct usb_to_osd_t{
 
    void sync()
    {
-      m_sp.flush();
       uint8_t const sync_cmd [] = {GET_SYNC, EOC};
       send(sync_cmd,2);
       getSync();
    }
 
-//   bool trySync()
-//   {
-//      uint8_t ch;
-//      recv(&ch);
-//      if (ch != INSYNC) {return false;}
-//      recv(&ch);
-//      return (ch == OK);
-//   }
-
-   // actually 3 params
    int32_t get_board_max_flash_size()
    {
       uint8_t const cmd [] = { GET_DEVICE, INFO_FLASH_SIZE, EOC};
@@ -194,6 +178,31 @@ struct usb_to_osd_t{
       getSync();
       return result;
    }
+
+// TODO
+   struct otp_t{
+
+      uint8_t h1;
+      uint8_t h2;
+      uint8_t h3;
+      uint8_t h4;
+      uint8_t id_type;
+      uint32_t vid;
+      uint32_t pid;
+      uint8_t reserved[19];
+      uint8_t signature[128];
+      
+   };
+//   bool get_board_otp()
+//   {
+//      union{
+//         uint8_t arr [4];
+//         uint32_t u;
+//      }u
+//      
+//     // 512 bytes
+//
+//   }
 
    // either in bl or not
    void reset_to_bootloader()
@@ -231,11 +240,13 @@ struct usb_to_osd_t{
       if ( !in || !in.good() ){
          throw std::runtime_error("Failed to open bin file");
       }
+      // get size of bin file
       in.seekg(0,in.end);
       firmware.image_size = in.tellg();
       in.seekg(0,in.beg);
 
       firmware.imagebyte.resize(firmware.image_size + (firmware.image_size % 4));
+
       for( int i = 0; i < static_cast<int32_t>(firmware.imagebyte.size());++i){
          if(i < firmware.image_size){
             firmware.imagebyte.at(i) = in.get();
@@ -249,9 +260,10 @@ struct usb_to_osd_t{
       uint8_t arr [PROG_MULTI_MAX]; 
       int32_t image_bytes_left = firmware.imagebyte.size();
       int32_t image_idx = 0;
+      
       while ( (image_bytes_left > 0) ){
          int32_t const sequence_length = quan::min(static_cast<int32_t>(PROG_MULTI_MAX),image_bytes_left);
-         //in.read((char*)arr,sequence_length);
+
          for ( int32_t i = 0;i < sequence_length; ++i){
             arr[i] = firmware.imagebyte.at(image_idx);
             ++ image_idx;
@@ -269,32 +281,28 @@ struct usb_to_osd_t{
 
       uint32_t board_crc = get_board_crc();
       if ( firmware.expected_crc != board_crc){
-         std::cout << "WARNING crc doesnt match\n";
+         throw std::runtime_error("In firmware upload ...file crc doesnt match uploaded crc\n");
       }else{
-         std::cout << "firmware verified\n";
+         std::cout << "Uploaded firmware crc matches file .. Good\n";
       }
    }
 
    void erase()
    {
+      // flush may be only necessary if started in app
       m_sp.flush();
       sync();
       uint8_t arr []= {CHIP_ERASE,EOC};
       send(arr,2);
       quan::timer<> t;
       while ( t() < quan::time::s{20}){
-         if (m_sp.in_avail() > 0 )
-         break;
+         if (m_sp.in_avail() > 0 ){
+            break;
+         }
       }
-      
       getSync();
-      
    }
 
-   void close()
-   {
-      m_sp.close();
-   }
 
 private:
    quan::serial_port m_sp;
@@ -303,52 +311,101 @@ private:
    void throw_if_not_connected()
    {
       if(!connected()){
-         throw std::runtime_error(" not connected");
+         throw std::runtime_error("not connected");
       }
    }
 };
 
-// TODO
-// *algorithm*
-// look for the "some signature" of the PlayUAV OSD on all the ACM ports
-// If successfully connected then call reset to bootloader on it.
-// try reading it after
-// if successful then there was no firmware and it is already in bootloader
 
-// if it fails then that is because it has reset itself
-// so look for the signature o all ports again
-// then do the programme part on that port
-
+// todo args
+   // prog  write  binfile 
+// could do read and verify too
 int main()
 {
+   std::cout << "PlayUAV OSD uploader hack\n";
+   std::cout << "looking for likely ports...\n";
    try{
+      // assume 5 ttyACM ports for now ACM0 to ACM4
+      constexpr uint32_t num_acm_ports = 5;
+      bool reset_from_app = false;
 
-// ...getting there. 
-     // if good firmware is loaded which can do a reset
-     // then on reset enumeration 
-     // gives a new file name to the port
-      // This only works if valid firmware is currently loaded
-// Tested and works one time so far !
-       std::cout<< "PlayUav firmware loader Hack!\n";
-// usually the first port
-       usb_to_osd_t sp{"/dev/ttyACM0"};
-       sp.sync();
-       sp.reset_to_bootloader();
-// let us not close the dead port to save confusion!
-//################################
-// usually the second port
-      usb_to_osd_t sp1{"/dev/ttyACM1"};
-      sp1.sync();
-      std::cout << "erasing...\n";
-      sp1.erase();
-      std::cout << "erased\n";
-      std::cout << "uploading...\n";
-      sp1.upload("/home/andy/cpp/projects/osd_comm/px4fw.bin");
-      std::cout << "uploaded\n";
-      
-      std::cout << "rebooting...\n";
-      sp1.reboot_to_app();
-      std::cout << "rebooted\n";
+      usb_to_osd_t* usb_to_osd = nullptr;
+      std::string port_name = "";
+      for ( uint8_t i = 0; i < num_acm_ports; ++i){
+         char int_name [4] = {'\0'};
+         quan::itoasc(i,int_name,10);
+         port_name = "/dev/ttyACM" + std::string{int_name};
+         try {
+            usb_to_osd = new usb_to_osd_t{port_name.c_str()};
+            usb_to_osd->sync();
+            usb_to_osd->reset_to_bootloader();
+         }catch(std::exception & e){
+           // any exception means try another port
+           delete usb_to_osd; usb_to_osd = nullptr;
+         }
+         // usb_to_osd != nullptr means we got through
+         if ( usb_to_osd != nullptr){
+            std::cout << "Found something looking like a PlayUAV OSD on " << port_name <<'\n';
+            try {
+               usb_to_osd->sync(); 
+            }catch (std::exception & e){
+               // we assume usb_to_osd failed due to reset to bootloader
+               std::cout << "Going down for a reboot to the bootloader...\n"; 
+               reset_from_app = true;
+            }
+            break;
+         }
+      }
+ 
+      if ( usb_to_osd != nullptr){ // we had a good port
+         if ( reset_from_app == true){
+            // port was re-enumerated hence dead so look for the new re-enumerated port
+            std::cout << "We were re-enumerated\n";
+            delete usb_to_osd; usb_to_osd = nullptr;
+            for ( uint8_t i = 0; i < num_acm_ports; ++i){
+               char int_name [4] = {'\0'};
+               quan::itoasc(i,int_name,10);
+               port_name = "/dev/ttyACM" + std::string{int_name};
+               try {
+                  usb_to_osd = new usb_to_osd_t{port_name.c_str()};
+                  usb_to_osd->sync();
+               }catch(std::exception & e){
+                 // any exception means try another port
+                 std::cout << "OK so we arent on " << port_name << " then!\n";
+                 delete usb_to_osd; usb_to_osd = nullptr;
+               }
+               // if here we reckon usb_to_osd is still good!
+               if ( usb_to_osd != nullptr ){
+                  std:: cout << "After re-enumeration we are on " << port_name <<'\n';
+                  break;
+               }
+            }
+            if ( usb_to_osd == nullptr){
+               std::cout << "Sorry, couldnt find a Likely port after re-enumeration\n";
+               delete usb_to_osd;
+               return EXIT_FAILURE;
+            }
+         }else{
+            std::cout << "Looks like we were in the bootloader already\n";
+         }
+      }else{
+         std::cout << "Sorry, couldnt find a valid port for PlayUAV OSD\n";
+         return EXIT_FAILURE;
+      }
+      assert((usb_to_osd != nullptr) && "something bad happened");
+      // continue with programming algorithm
+      std::cout << "erasing ... (Please wait) ...\n";
+      usb_to_osd->erase();
+      std::cout << "board erased\n";
+      std::cout << "uploading firmware...\n";
+      usb_to_osd->upload("/home/andy/cpp/projects/osd_comm/px4fw.bin");
+     // usb_to_osd->upload("/home/andy/cpp/projects/osd_comm/PlayuavOSD.bin");
+      std::cout << "firmware uploaded\n";
+      std::cout << "rebooting the board...\n";
+      usb_to_osd->reboot_to_app();
+      std::cout << "board rebooted\n";
+      delete usb_to_osd;
+      std::cout << "firmware uploaded successfully\n";
       return EXIT_SUCCESS;
    }catch (std::exception & e){
       std::cout << "Exception '" <<  e.what() << "'\n";
