@@ -456,7 +456,7 @@ int main(int argc, const char* argv[])
       usb_to_osd->erase();
       std::cout << "OK! ... board erased\n";
       std::cout << "uploading firmware... (Please wait)...\n";
-      usb_to_osd->upload("/home/andy/cpp/projects/osd_comm/px4fw.bin");
+      usb_to_osd->upload(argv[2]);
      // usb_to_osd->upload("/home/andy/cpp/projects/osd_comm/PlayuavOSD.bin");
       std::cout << "OK! ... firmware uploaded\n";
       std::cout << "rebooting the board...\n";
