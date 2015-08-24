@@ -19,25 +19,12 @@ namespace px4Uploader{
 
 struct usb_to_osd_t{
 
-    struct Firmware
-    {
-//        int board_id;
-//        std::string magic;
-//        std::string description;
-//        std::string image;
+    struct Firmware{
         std::vector<uint8_t> imagebyte;
         int32_t image_size;
         uint32_t expected_crc;
         int32_t board_flash_size;
-//        uint32_t build_time;
-//        std::string summary;
-//        std::string version;
-//        int image_size;
-//        std::string git_identity;
-//        int board_revision;
-        
-        //static Firmware fw;
-         Firmware():image_size{0}, expected_crc{0}, board_flash_size{0}{}
+        Firmware():image_size{0}, expected_crc{0}, board_flash_size{0}{}
      } firmware;
 
    usb_to_osd_t( const char* port_name)
@@ -45,7 +32,7 @@ struct usb_to_osd_t{
    {
       m_sp.init();
       m_good = m_sp.good() && (m_sp.set_baud(115200) == 0);
-      if( !m_good){
+      if(!m_good){
          throw std::runtime_error("usb_to_osd ctor : couldnt connect");
       }
    }
@@ -123,7 +110,7 @@ struct usb_to_osd_t{
       return u.i;
    }
 
-    uint32_t recv_uint()
+   uint32_t recv_uint()
    {
       union{
          uint8_t arr[4];
@@ -138,7 +125,6 @@ struct usb_to_osd_t{
       uint8_t ch;
       recv(& ch);
       if ( ch != INSYNC){
-        // std::cout << " ch = " << (int) ch <<'\n';
          throw std::runtime_error("get_sync : expected INSYNC");
       }
       recv(&ch);
@@ -179,32 +165,8 @@ struct usb_to_osd_t{
       return result;
    }
 
-// TODO
-   struct otp_t{
 
-      uint8_t h1;
-      uint8_t h2;
-      uint8_t h3;
-      uint8_t h4;
-      uint8_t id_type;
-      uint32_t vid;
-      uint32_t pid;
-      uint8_t reserved[19];
-      uint8_t signature[128];
-      
-   };
-//   bool get_board_otp()
-//   {
-//      union{
-//         uint8_t arr [4];
-//         uint32_t u;
-//      }u
-//      
-//     // 512 bytes
-//
-//   }
-
-   // either in bl or not
+   // works  in bl or app
    void reset_to_bootloader()
    {
       uint8_t const cmd [] = {PROTO_BL_UPLOAD, EOC};
@@ -289,7 +251,6 @@ struct usb_to_osd_t{
 
    void erase()
    {
-      // flush may be only necessary if started in app
       m_sp.flush();
       sync();
       uint8_t arr []= {CHIP_ERASE,EOC};
@@ -303,7 +264,6 @@ struct usb_to_osd_t{
       getSync();
    }
 
-
 private:
    quan::serial_port m_sp;
    bool m_good;
@@ -316,35 +276,6 @@ private:
    }
 };
 
-/*
-std::cout << "******************************\n";
-   std::cout << "*                            *\n";
-   std::cout << "*  Quantracker Air OSD       *\n";
-   std::cout << "*  Params setup v1.1         *\n";
-   std::cout << "*  Copyright (C) Andy Little *\n";
-   std::cout << "*  www.zoomworks.org         *\n";
-   std::cout << "*  Jul 2015                  *\n";
-   std::cout << "*                            *\n";
-   std::cout << "******************************\n\n";
-   
-   if (argc != 5) {
-      std::cout << "usage " << argv[0] << " -read|-write <filename> -port <portname>\n";
-      return EXIT_FAILURE;
-   }
-
-   if (!strncmp (argv[1], "-read", 6)) {
-      
-      return flash_read(argv[2],argv[4]);
-   }
-
-   if ( (!strncmp (argv[1], "-write", 7)) && ( !strncmp (argv[3], "-port",6) ) ){
-
-      return flash_write (argv[2],argv[4]);
-   } 
-}
-
-*/
-
 void usage(const char* app_name)
 {
    std::cout << "usage :\n";
@@ -352,6 +283,7 @@ void usage(const char* app_name)
    std::cout << "      " << app_name << " -write <from_filename>\n\n";
    std::cout << "(TODO: read, verify, erase_all, erase_sectors)\n\n";
 }
+
 int main(int argc, const char* argv[])
 {
    std::cout << "\n\n";
@@ -426,11 +358,11 @@ int main(int argc, const char* argv[])
                   usb_to_osd = new usb_to_osd_t{port_name.c_str()};
                   usb_to_osd->sync();
                }catch(std::exception & e){
-                 // any exception means try another port
-                 if ( (i + 1U) <  num_acm_ports){
-                  std::cout << "OK! ... continuing to try other Ports\n";
-                 }
-                 delete usb_to_osd; usb_to_osd = nullptr;
+                  // any exception means try another port
+                  if ( (i + 1U) <  num_acm_ports){
+                     std::cout << "OK! ... continuing to try other Ports\n";
+                  }
+                  delete usb_to_osd; usb_to_osd = nullptr;
                }
                // if here we reckon usb_to_osd is still good!
                if ( usb_to_osd != nullptr ){
@@ -438,7 +370,7 @@ int main(int argc, const char* argv[])
                   break;
                }
             }
-            if ( usb_to_osd == nullptr){
+            if ( usb_to_osd == nullptr ){
                std::cout << "Sorry, couldnt find a Likely port after re-enumeration\n";
                delete usb_to_osd;
                return EXIT_FAILURE;
@@ -451,13 +383,12 @@ int main(int argc, const char* argv[])
          return EXIT_FAILURE;
       }
       assert((usb_to_osd != nullptr) && "something bad happened");
-      // continue with programming algorithm
+      //------------------
       std::cout << "erasing... (Please wait)...\n";
       usb_to_osd->erase();
       std::cout << "OK! ... board erased\n";
       std::cout << "uploading firmware... (Please wait)...\n";
       usb_to_osd->upload(argv[2]);
-     // usb_to_osd->upload("/home/andy/cpp/projects/osd_comm/PlayuavOSD.bin");
       std::cout << "OK! ... firmware uploaded\n";
       std::cout << "rebooting the board...\n";
       usb_to_osd->reboot_to_app();
