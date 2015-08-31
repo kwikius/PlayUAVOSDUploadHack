@@ -3,7 +3,7 @@ INCLUDES = $(QUAN_ROOT)
 CC = g++
 LD = g++
 
-APPNAME = PlayuavOSD-util
+APPNAME = playuavosd-util
 
 INCLUDE_ARGS = $(patsubst %,-I%,$(INCLUDES))
 CFLAGS = -std=c++11 -Wall
