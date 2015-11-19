@@ -1,0 +1,31 @@
+
+tool to upload PlayUAVOSD firmware at the command line
+
+Requires my quan library
+
+ https://github.com/kwikius/quan-trunk/archive/master.zip
+
+Or clone the repo...
+
+  https://github.com/kwikius/quan-trunk.git
+
+to build
+
+   ~$ make QUAN_ROOT=<path_to_quan_library>
+
+To use ( from build dir)
+ 
+   ./playuavosd-util -write <from_filename>
+
+or add to path..
+
+Changes
+   renamed the app so it is all lower case.
+
+TODO
+   add read verify and write EEPROM params etc
+   write serial port driver for other operating systems
+
+
+
+

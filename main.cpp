@@ -122,6 +122,17 @@ struct usb_to_osd_t{
 
    void getSync()
    {
+      quan:: timer<> timer;
+
+      while ( timer() < quan::time::s{7}){
+         if (m_sp.in_avail() > 1 ){
+            break;
+         }
+      }
+      if ( m_sp.in_avail() < 2){
+         throw std::runtime_error("get_sync : expected INSYNC");
+      }
+
       uint8_t ch;
       recv(& ch);
       if ( ch != INSYNC){
@@ -379,7 +390,9 @@ int main(int argc, const char* argv[])
             std::cout << "Looks like we were in the bootloader already\n";
          }
       }else{
-         std::cout << "Sorry, couldnt find a valid port for PlayUAV OSD\n";
+         std::cout <<  "Sorry, couldnt find a valid port for PlayUAV OSD\n"
+                       "If you have PlayUAV connected, try running this app\n"
+                       "immediately after connection to catch bootloader\n";
          return EXIT_FAILURE;
       }
       assert((usb_to_osd != nullptr) && "something bad happened");
