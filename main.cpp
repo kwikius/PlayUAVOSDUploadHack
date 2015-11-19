@@ -281,7 +281,7 @@ void usage(const char* app_name)
    std::cout << "usage :\n";
    std::cout << "1) write firmware to PlayUAV OSD board from <from_filename>\n\n";
    std::cout << "      " << app_name << " -write <from_filename>\n\n";
-   std::cout << "(TODO: read, verify, erase_all, erase_sectors)\n\n";
+   std::cout << "(TODO: read, verify, erase_all, erase_sectors, upload to eeprom)\n\n";
 }
 
 int main(int argc, const char* argv[])
