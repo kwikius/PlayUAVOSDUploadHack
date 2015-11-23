@@ -12,6 +12,8 @@
 #include <quan/conversion/itoa.hpp>
 #include <cassert>
 
+#include "params.h"
+
 namespace px4Uploader{
 
    int32_t crc(std::vector<uint8_t> const & bytes,int32_t padlen);
@@ -295,8 +297,16 @@ void usage(const char* app_name)
    std::cout << "(TODO: read, verify, erase_all, erase_sectors, upload to eeprom)\n\n";
 }
 
+COSDParam osdparam;
+void testparam()
+{
+    osdparam.load_params_from_file("s_osd.posd");
+}
+
 int main(int argc, const char* argv[])
 {
+    testparam();
+    return 1;
    std::cout << "\n\n";
    std::cout << "   ******************************\n";
    std::cout << "   *                            *\n";
