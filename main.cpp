@@ -300,7 +300,7 @@ void usage(const char* app_name)
 COSDParam osdparam;
 void testparam()
 {
-    osdparam.load_params_from_file("s_osd.posd");
+    osdparam.load_params_from_file("default_params.posd");
 }
 
 int main(int argc, const char* argv[])
