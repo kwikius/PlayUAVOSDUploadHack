@@ -15,17 +15,32 @@ to build
 
 To use ( from build dir)
  
-   ./playuavosd-util -write <from_filename>
+usage :
 
-or add to path..
+   1) write firmware to PlayUAV OSD board from <from_filename>
+         ./playuavosd-util -fw_w <from_filename>
+
+   2) set parameters to PlayUAV OSD board from <from_filename>
+         ./playuavosd-util -pm_w <from_filename>
+
+   3) set default parameters to PlayUAV OSD board
+         ./playuavosd-util -pm_w
+
+   4) get parameters from PlayUAV OSD board and save to <to_filename>
+         ./playuavosd-util -pm_r <to_filename>
+
+.. or add to path
+
 
 Changes
    renamed the app so it is all lower case.
+   upload and download parameters from and to, a file
 
 TODO
-   add read verify and write EEPROM params etc
+   add read, verify, erase_all, erase_sectors
    write serial port driver for other operating systems
 
-
-
+Acknowledgements
+    Thanks to Tom Ren for work on the the parameter upload and download code
+    Thanks to mashu https://github.com/mashu for starting work on a Python/GTK GUI
 

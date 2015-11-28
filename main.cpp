@@ -57,7 +57,7 @@ int main(int argc, const char* argv[])
     std::cout << "   *     Firmware Utility v1.1           *\n";
     std::cout << "   *     For documentation:              *\n";
     std::cout << "   *     visit http://www.playuav.com    *\n";
-    std::cout << "   *     Copyright (c) Nov 2015          *\n ;
+    std::cout << "   *     Copyright (c) Nov 2015          *\n";
     std::cout << "   *     Andy Little, Tom Ren            *\n";
     std::cout << "   *                                     *\n";
     std::cout << "   ***************************************\n\n";
