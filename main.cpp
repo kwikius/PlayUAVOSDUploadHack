@@ -1,4 +1,21 @@
+/*
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+ 
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU General Public License for more details.
+ 
+ You should have received a copy of the GNU General Public License
+ along with this program. If not, see <http://www.gnu.org/licenses/>
 
+Authors:
+   Andy Little
+   Tom Ren
+*/
 
 #include <quan/serial_port.hpp>
 #include <iostream>
@@ -34,15 +51,16 @@ COSDConn osdconn;
 int main(int argc, const char* argv[])
 {
     std::cout << "\n\n";
-    std::cout << "   ******************************\n";
-    std::cout << "   *                            *\n";
-    std::cout << "   *  PlayUAV OSD               *\n";
-    std::cout << "   *  Firmware Utility v1.0     *\n";
-    std::cout << "   *  Copyright (C) Andy Little *\n";
-    std::cout << "   *  www.zoomworks.org         *\n";
-    std::cout << "   *  Aug 2015                  *\n";
-    std::cout << "   *                            *\n";
-    std::cout << "   ******************************\n\n";
+    std::cout << "   ***************************************\n";
+    std::cout << "   *                                     *\n";
+    std::cout << "   *     PlayUAV OSD                     *\n";
+    std::cout << "   *     Firmware Utility v1.1           *\n";
+    std::cout << "   *     For documentation:              *\n";
+    std::cout << "   *     visit http://www.playuav.com    *\n";
+    std::cout << "   *     Copyright (c) Nov 2015          *\n ;
+    std::cout << "   *     Andy Little, Tom Ren            *\n";
+    std::cout << "   *                                     *\n";
+    std::cout << "   ***************************************\n\n";
 
     if ( ( argc < 2) ) {
         usage(argv[0]);
