@@ -1,3 +1,24 @@
+/*
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+ 
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU General Public License for more details.
+ 
+ You should have received a copy of the GNU General Public License
+ along with this program. If not, see <http://www.gnu.org/licenses/>
+
+Authors:
+   Andy Little
+   Tom Ren
+*/
+
+#include "osdconn.h"
+
 #include <iostream>
 #include <stdexcept>
 #include <string>
@@ -242,7 +263,7 @@ bool COSDConn::_try_connect()
                 m_sp->init();
                 m_good = m_sp->good() && (m_sp->set_baud(115200) == 0);
                 if ( m_good){
-                    std::cout << "Found something looking like a PlayUAV OSD on " << port_name <<'\n';
+                    std::cout << "Found PlayUAV OSD on " << port_name <<'\n';
                     break;
                 }
             }catch(std::exception & e){
