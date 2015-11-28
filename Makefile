@@ -25,4 +25,4 @@ serial_port.o : $(QUAN_ROOT)/quan_matters/src/serial_port.cpp
 	$(CC) $(CFLAGS) $(INCLUDE_ARGS) -c $< -o $@ 
 	
 clean:
-	-rm -rf *.o *.exe
+	-rm -rf *.o $(APPNAME)
