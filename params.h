@@ -28,8 +28,8 @@ private:
     uint16_t _panel_str_to_u16(const std::string paramvalue);
 
 
-    ParamsAddrMap _params_addr;
-    uint8_t _default_params[PARAMS_BUF_SIZE];
-    const uint16_t _firmware_version;
-    const uint16_t _protocol_type;
+    ParamsAddrMap m_params_addr;
+    uint8_t m_default_params[PARAMS_BUF_SIZE];
+    const uint16_t m_firmware_version;
+    const uint16_t m_protocol_type;
 };

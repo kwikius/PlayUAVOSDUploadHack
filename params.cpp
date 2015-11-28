@@ -9,10 +9,10 @@
 #include <list>
 
 COSDParam::COSDParam():
-    _firmware_version(10),
-    _protocol_type(0)
+    m_firmware_version(10),
+    m_protocol_type(0)
 {
-    memset((char *)_default_params, 0, PARAMS_BUF_SIZE);
+    memset(m_default_params, 0, PARAMS_BUF_SIZE);
     _init_params();
 }
 
@@ -70,7 +70,7 @@ bool COSDParam::store_params_to_file(const std::string &filename, uint8_t * buf_
     }
 
     ParamsAddrMap::iterator iterParamsAddr;
-    for(iterParamsAddr = _params_addr.begin(); iterParamsAddr != _params_addr.end(); iterParamsAddr++){
+    for(iterParamsAddr = m_params_addr.begin(); iterParamsAddr != m_params_addr.end(); iterParamsAddr++){
         if((iterParamsAddr->first).find("Misc_Start_Col_Sign") != std::string::npos) continue;
         if((iterParamsAddr->first).find("Altitude_Scale_Source") != std::string::npos) continue;    //not-used
         if((iterParamsAddr->first).find("Speed_Scale_Source") != std::string::npos) continue;    //not-used
@@ -90,13 +90,13 @@ bool COSDParam::store_params_to_file(const std::string &filename, uint8_t * buf_
 
 void COSDParam::get_default_params(uint8_t *buf_in)
 {
-    memcpy(buf_in, _default_params, PARAMS_BUF_SIZE);
+    memcpy(buf_in, m_default_params, PARAMS_BUF_SIZE);
 }
 
 void COSDParam::_set_params_default(const std::string &paramname, int32_t addr, uint16_t initval)
 {
-    _params_addr[paramname] = addr;
-    _u16_to_buf(_default_params, addr, initval);
+    m_params_addr[paramname] = addr;
+    _u16_to_buf(m_default_params, addr, initval);
 }
 
 void COSDParam::_u16_to_buf(uint8_t * buf, int32_t addr, uint16_t val)
@@ -118,8 +118,8 @@ void COSDParam::_str_to_buf(uint8_t *buf, const std::string &paramname, const st
         if((paramname.find("_Panel") != std::string::npos) &&
            (paramname.find("PWM") == std::string::npos)    &&
            (paramname.find("Max_Panels") == std::string::npos)){
-            iterParamsAddr = _params_addr.find(paramname);
-            if(iterParamsAddr != _params_addr.end()){
+            iterParamsAddr = m_params_addr.find(paramname);
+            if(iterParamsAddr != m_params_addr.end()){
                 paramAddr = iterParamsAddr->second;
                 uint16_t nval = _panel_str_to_u16(paramvalue);
                 _u16_to_buf(buf, paramAddr, nval);
@@ -141,14 +141,14 @@ void COSDParam::_str_to_buf(uint8_t *buf, const std::string &paramname, const st
             else{
                 nval_real = atoi(paramvalue.c_str());
             }
-            iterParamsAddr = _params_addr.find(paramname + "_Real");
-            if(iterParamsAddr != _params_addr.end()){
+            iterParamsAddr = m_params_addr.find(paramname + "_Real");
+            if(iterParamsAddr != m_params_addr.end()){
                 paramAddr = iterParamsAddr->second;
                 _u16_to_buf(buf, paramAddr, nval_real);
             }
 
-            iterParamsAddr = _params_addr.find(paramname + "_Frac");
-            if(iterParamsAddr != _params_addr.end()){
+            iterParamsAddr = m_params_addr.find(paramname + "_Frac");
+            if(iterParamsAddr != m_params_addr.end()){
                 paramAddr = iterParamsAddr->second;
                 _u16_to_buf(buf, paramAddr, nval_frac);
             }
@@ -157,8 +157,8 @@ void COSDParam::_str_to_buf(uint8_t *buf, const std::string &paramname, const st
 
         //Misc_Start_Row : don't allow negative value
         if((paramname.find("Misc_Start_Row") != std::string::npos)){
-            iterParamsAddr = _params_addr.find(paramname);
-            if(iterParamsAddr != _params_addr.end()){
+            iterParamsAddr = m_params_addr.find(paramname);
+            if(iterParamsAddr != m_params_addr.end()){
                 paramAddr = iterParamsAddr->second;
                 uint16_t nval = abs(atoi(paramvalue.c_str()));
                 _u16_to_buf(buf, paramAddr, nval);
@@ -172,14 +172,14 @@ void COSDParam::_str_to_buf(uint8_t *buf, const std::string &paramname, const st
             uint16_t absval = abs(nval);
             uint16_t nsign = (nval < 0) ? 0 : 1;
 
-            iterParamsAddr = _params_addr.find(paramname);
-            if(iterParamsAddr != _params_addr.end()){
+            iterParamsAddr = m_params_addr.find(paramname);
+            if(iterParamsAddr != m_params_addr.end()){
                 paramAddr = iterParamsAddr->second;
                 _u16_to_buf(buf, paramAddr, absval);
             }
 
-            iterParamsAddr = _params_addr.find(paramname + "_Sign");
-            if(iterParamsAddr != _params_addr.end()){
+            iterParamsAddr = m_params_addr.find(paramname + "_Sign");
+            if(iterParamsAddr != m_params_addr.end()){
                 paramAddr = iterParamsAddr->second;
                 _u16_to_buf(buf, paramAddr, nsign);
             }
@@ -187,8 +187,8 @@ void COSDParam::_str_to_buf(uint8_t *buf, const std::string &paramname, const st
         }
 
         //It is a normal uint16_t value
-        iterParamsAddr = _params_addr.find(paramname);
-        if(iterParamsAddr != _params_addr.end())
+        iterParamsAddr = m_params_addr.find(paramname);
+        if(iterParamsAddr != m_params_addr.end())
         {
             paramAddr = iterParamsAddr->second;
             uint16_t nval = atoi(paramvalue.c_str());
@@ -268,8 +268,8 @@ std::string COSDParam::_param_serialize(uint8_t *buf, int32_t addr, const std::s
             uint16_t signvalue = 0;
             ParamsAddrMap::iterator iterParamsAddr;
 
-            iterParamsAddr = _params_addr.find("Misc_Start_Col_Sign");
-            if(iterParamsAddr != _params_addr.end()){
+            iterParamsAddr = m_params_addr.find("Misc_Start_Col_Sign");
+            if(iterParamsAddr != m_params_addr.end()){
                 signvalue = _get_u16_param(buf, iterParamsAddr->second);
             }
 
@@ -322,7 +322,7 @@ uint16_t COSDParam::_panel_str_to_u16(const std::string paramvalue)
 void COSDParam::dump_params(uint8_t * buf)
 {
     ParamsAddrMap::iterator iterParamsAddr;
-    for(iterParamsAddr = _params_addr.begin(); iterParamsAddr != _params_addr.end(); iterParamsAddr++){
+    for(iterParamsAddr = m_params_addr.begin(); iterParamsAddr != m_params_addr.end(); iterParamsAddr++){
         std::cout << iterParamsAddr->first;
         std::cout << ":";
         std::cout << _get_u16_param(buf, iterParamsAddr->second);
@@ -332,7 +332,7 @@ void COSDParam::dump_params(uint8_t * buf)
 
 void COSDParam::_init_params()
 {
-    _params_addr.clear();
+    m_params_addr.clear();
     int32_t address = 0;
 
     _set_params_default("ArmState_Enable",address, 1); address += 2;
@@ -536,7 +536,7 @@ void COSDParam::_init_params()
     _set_params_default("RSSI_Max",address, 255); address += 2;
     _set_params_default("RSSI_Raw_Enable",address, 0); address += 2;
 
-    _set_params_default("FC_Type",address, _protocol_type); address += 2;
+    _set_params_default("FC_Type",address, m_protocol_type); address += 2;
 
     _set_params_default("Wind_Enable",address, 1); address += 2;
     _set_params_default("Wind_Panel",address, 2); address += 2;
@@ -560,7 +560,7 @@ void COSDParam::_init_params()
     _set_params_default("Misc_Start_Row",address, 0); address += 2;
     _set_params_default("Misc_Start_Col",address, 0); address += 2;
 
-    _set_params_default("Misc_Firmware_ver",address, _firmware_version); address += 2;
+    _set_params_default("Misc_Firmware_ver",address, m_firmware_version); address += 2;
 
     _set_params_default("Misc_Video_Mode",address, 1); address += 2;
 
