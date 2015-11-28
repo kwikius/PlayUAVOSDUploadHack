@@ -1,5 +1,5 @@
 
-QUAN_ROOT = ../quan-trunk
+#QUAN_ROOT = ../quan-trunk
 INCLUDES = $(QUAN_ROOT)
 CC = g++
 LD = g++
@@ -9,7 +9,7 @@ APPNAME = playuavosd-util
 INCLUDE_ARGS = $(patsubst %,-I%,$(INCLUDES))
 CFLAGS = -std=c++11 -Wall
 
-local_objects = main.o crc.o params.o
+local_objects = main.o crc.o params.o osdconn.o
 
 objects = $(local_objects) serial_port.o 
 

@@ -12,10 +12,11 @@ public:
     COSDParam();
     ~COSDParam();
 
-    bool load_params_from_file(const std::string & filename);
-    bool store_params_to_file(const std::string & filename);
+    bool load_params_from_file(const std::string & filename, uint8_t * buf_in);
+    bool store_params_to_file(const std::string & filename, uint8_t * buf_in);
 
-    void dump_params();
+    void get_default_params(uint8_t * buf_in);
+    void dump_params(uint8_t * buf);
 
 private:
     void _init_params();
@@ -29,7 +30,6 @@ private:
 
     ParamsAddrMap _params_addr;
     uint8_t _default_params[PARAMS_BUF_SIZE];
-    uint8_t _params[PARAMS_BUF_SIZE];
     const uint16_t _firmware_version;
     const uint16_t _protocol_type;
 };

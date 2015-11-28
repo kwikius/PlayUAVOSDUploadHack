@@ -13,7 +13,6 @@ COSDParam::COSDParam():
     _protocol_type(0)
 {
     memset((char *)_default_params, 0, PARAMS_BUF_SIZE);
-    memset((char *)_params, 0, PARAMS_BUF_SIZE);
     _init_params();
 }
 
@@ -22,12 +21,13 @@ COSDParam::~COSDParam()
 
 }
 
-bool COSDParam::load_params_from_file(const std::string &filename)
+bool COSDParam::load_params_from_file(const std::string &filename, uint8_t * buf_in)
 {
     std::ifstream in( filename, std::ios_base::in);
 
     if ( !in || !in.good() ){
-       throw std::runtime_error("Failed to open parameters file:" + filename);
+        std::cout << "Failed to open parameters file:" << filename << std::endl;
+        return false;
     }
 
     in.seekg(0, std::ios::beg);
@@ -43,28 +43,30 @@ bool COSDParam::load_params_from_file(const std::string &filename)
             try {
                 strParamName = strLine.substr(0,pos);
                 strParamValue = strLine.substr(pos+1,strLine.length()-1);
-                _str_to_buf(_params, strParamName, strParamValue);
-                //std::cout << strParamName << ":" << strParamValue << std::endl;
+                _str_to_buf(buf_in, strParamName, strParamValue);
             }catch(std::exception & e){
-                throw std::runtime_error("Bad parameter item: " + strLine);
+                std::cout << "Bad parameter item: " << strLine << std::endl;
+                return false;
             }
 
         }
         else{
-            throw std::runtime_error("Bad parameter item: " + strLine);
+            std::cout << "Bad parameter item: " << strLine;
+            return false;
         }
     }
-    dump_params();
+
     return true;
 }
 
-bool COSDParam::store_params_to_file(const std::string &filename)
+bool COSDParam::store_params_to_file(const std::string &filename, uint8_t * buf_in)
 {
     std::ofstream fo;
     fo.open(filename);
 
     if ( !fo.is_open()){
-       throw std::runtime_error("Failed to create parameters file:" + filename);
+        std::cout << "Failed to create parameters file:" << filename << std::endl;
+        return false;
     }
 
     ParamsAddrMap::iterator iterParamsAddr;
@@ -77,16 +79,18 @@ bool COSDParam::store_params_to_file(const std::string &filename)
         if((iterParamsAddr->first).find("Attitude_MP_Mode") != std::string::npos) continue;         //not-used
         if((iterParamsAddr->first).find("Misc_Firmware_ver") != std::string::npos) continue;   //not allowed modify
 
-//        fo << iterParamsAddr->first;
-//        fo << "=";
-        fo << _param_serialize(_params, iterParamsAddr->second, iterParamsAddr->first);
-//        fo << "\n";
+        fo << _param_serialize(buf_in, iterParamsAddr->second, iterParamsAddr->first);
     }
 
     fo.flush();
     fo.close();
 
     return true;
+}
+
+void COSDParam::get_default_params(uint8_t *buf_in)
+{
+    memcpy(buf_in, _default_params, PARAMS_BUF_SIZE);
 }
 
 void COSDParam::_set_params_default(const std::string &paramname, int32_t addr, uint16_t initval)
@@ -118,7 +122,7 @@ void COSDParam::_str_to_buf(uint8_t *buf, const std::string &paramname, const st
             if(iterParamsAddr != _params_addr.end()){
                 paramAddr = iterParamsAddr->second;
                 uint16_t nval = _panel_str_to_u16(paramvalue);
-                _u16_to_buf(_params, paramAddr, nval);
+                _u16_to_buf(buf, paramAddr, nval);
             }
             return;
         }
@@ -140,13 +144,13 @@ void COSDParam::_str_to_buf(uint8_t *buf, const std::string &paramname, const st
             iterParamsAddr = _params_addr.find(paramname + "_Real");
             if(iterParamsAddr != _params_addr.end()){
                 paramAddr = iterParamsAddr->second;
-                _u16_to_buf(_params, paramAddr, nval_real);
+                _u16_to_buf(buf, paramAddr, nval_real);
             }
 
             iterParamsAddr = _params_addr.find(paramname + "_Frac");
             if(iterParamsAddr != _params_addr.end()){
                 paramAddr = iterParamsAddr->second;
-                _u16_to_buf(_params, paramAddr, nval_frac);
+                _u16_to_buf(buf, paramAddr, nval_frac);
             }
             return;
         }
@@ -157,7 +161,7 @@ void COSDParam::_str_to_buf(uint8_t *buf, const std::string &paramname, const st
             if(iterParamsAddr != _params_addr.end()){
                 paramAddr = iterParamsAddr->second;
                 uint16_t nval = abs(atoi(paramvalue.c_str()));
-                _u16_to_buf(_params, paramAddr, nval);
+                _u16_to_buf(buf, paramAddr, nval);
             }
             return;
         }
@@ -171,13 +175,13 @@ void COSDParam::_str_to_buf(uint8_t *buf, const std::string &paramname, const st
             iterParamsAddr = _params_addr.find(paramname);
             if(iterParamsAddr != _params_addr.end()){
                 paramAddr = iterParamsAddr->second;
-                _u16_to_buf(_params, paramAddr, absval);
+                _u16_to_buf(buf, paramAddr, absval);
             }
 
             iterParamsAddr = _params_addr.find(paramname + "_Sign");
             if(iterParamsAddr != _params_addr.end()){
                 paramAddr = iterParamsAddr->second;
-                _u16_to_buf(_params, paramAddr, nsign);
+                _u16_to_buf(buf, paramAddr, nsign);
             }
             return;
         }
@@ -188,11 +192,11 @@ void COSDParam::_str_to_buf(uint8_t *buf, const std::string &paramname, const st
         {
             paramAddr = iterParamsAddr->second;
             uint16_t nval = atoi(paramvalue.c_str());
-            _u16_to_buf(_params, paramAddr, nval);
+            _u16_to_buf(buf, paramAddr, nval);
         }
 
     }catch(std::exception & e){
-        throw std::runtime_error("Bad parameter item: " + paramname + "=" + paramvalue);
+        std::cout << paramname << "=" << paramvalue << "with exception:" << e.what() << std::endl;
     }
 }
 
@@ -242,10 +246,10 @@ std::string COSDParam::_param_serialize(uint8_t *buf, int32_t addr, const std::s
                 for (it=vals.begin(); it!=vals.end(); ++it){
                     strret += std::to_string(*it) + ",";
                 }
-
+                strret = strret.substr(0, strret.length()-1);
             }
 
-            return paramname + "=" + strret.substr(0, strret.length()-1) + "\n";
+            return paramname + "=" + strret + "\n";
         }
 
         //Scale : we store the scale as float, and we use uint16_t in buffer for alignment.
@@ -286,7 +290,8 @@ std::string COSDParam::_param_serialize(uint8_t *buf, int32_t addr, const std::s
         strret = std::to_string(realvalue);
 
     }
-    catch(std::exception){
+    catch(std::exception & e){
+        std::cout << "_param_serialize() with exception:" << e.what() << std::endl;
         return strret;
     }
 
@@ -307,19 +312,20 @@ uint16_t COSDParam::_panel_str_to_u16(const std::string paramvalue)
 
     }
     catch(std::exception){
-        throw std::runtime_error("Bad parameter item: " + paramvalue);
+        std::cout << "Bad parameter item: " << paramvalue << std::endl;
+        return 0;
     }
 
     return nret;
 }
 
-void COSDParam::dump_params()
+void COSDParam::dump_params(uint8_t * buf)
 {
     ParamsAddrMap::iterator iterParamsAddr;
     for(iterParamsAddr = _params_addr.begin(); iterParamsAddr != _params_addr.end(); iterParamsAddr++){
         std::cout << iterParamsAddr->first;
         std::cout << ":";
-        std::cout << _get_u16_param(_params, iterParamsAddr->second);
+        std::cout << _get_u16_param(buf, iterParamsAddr->second);
         std::cout << std::endl;
     }
 }
@@ -609,6 +615,4 @@ void COSDParam::_init_params()
 
     //1:4800、2:9600、3:19200、4:38400、5:43000、6:56000、7:57600、8:115200
     _set_params_default("Misc_USART_BandRate",address, 7); address += 2;
-
-    memcpy(_params, _default_params, PARAMS_BUF_SIZE);
 }
