@@ -43,7 +43,7 @@ void usage(const char* app_name)
     std::cout << "      " << app_name << " -pm_w\n\n";
     std::cout << "4) get parameters from PlayUAV OSD board and save to <to_filename>\n";
     std::cout << "      " << app_name << " -pm_r <to_filename>\n\n";
-    std::cout << "(TODO: read, verify, erase_all, erase_sectors, upload to eeprom)\n\n";
+
 }
 
 COSDConn osdconn;
