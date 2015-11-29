@@ -66,33 +66,33 @@ COSDConn::~COSDConn()
 
 void COSDConn::upload_firmware( std::string const & filename)
 {
-    if(!_try_connect()){
+    if(!m_connect()){
         return;
     }
     //tell the app to reboot to bootloader
-    _sync();
-    _reset_to_bootloader();
+    m_sync();
+    m_reset_to_bootloader();
     try {
-        _sync();
+        m_sync();
     }catch (std::exception){
         // we assume usb_to_osd failed due to reset to bootloader
-        _disconnect();
+        m_disconnect();
         std::cout << "Going down for a reboot to the bootloader...\n";
     }
 
     std::cout << "We were re-enumerated\n";
-    if(!_try_connect()){
+    if(!m_connect()){
         return;
     }
     std:: cout << "re-enumeration OK!\n";
     //------------------
     std::cout << "erasing... (Please wait)...\n";
-    _erase();
+    m_erase();
     std::cout << "OK! ... board erased\n";
     std::cout << "uploading firmware... (Please wait)...\n";
 
     Firmware firmware;
-    firmware.board_flash_size = _get_board_max_flash_size();
+    firmware.board_flash_size = m_get_board_max_flash_size();
 
     std::ifstream in( filename, std::ios_base::in | std::ios_base::binary);
 
@@ -128,18 +128,18 @@ void COSDConn::upload_firmware( std::string const & filename)
             arr[i] = firmware.imagebyte.at(image_idx);
             ++ image_idx;
         }
-        _send(PROG_MULTI);
-        _send(static_cast<uint8_t>(sequence_length));
-        _send(arr,sequence_length);
-        _send(EOC);
-        _getSync();
+        m_send(PROG_MULTI);
+        m_send(static_cast<uint8_t>(sequence_length));
+        m_send(arr,sequence_length);
+        m_send(EOC);
+        m_get_sync();
         image_bytes_left -= sequence_length;
     }
     if (image_bytes_left != 0 ){
         throw std::runtime_error("infile Failed while uploading bin file");
     }
 
-    uint32_t board_crc = _get_board_crc();
+    uint32_t board_crc = m_get_board_crc();
     if ( firmware.expected_crc != board_crc){
         throw std::runtime_error("In firmware upload ...file crc doesnt match uploaded crc\n");
     }else{
@@ -147,19 +147,19 @@ void COSDConn::upload_firmware( std::string const & filename)
     }
     std::cout << "OK! ... firmware uploaded\n";
     std::cout << "rebooting the board...\n";
-    _reboot_to_app();
+    m_reboot_to_app();
     std::cout << "OK! ... board rebooted\n";
     std::cout << "OK! ... firmware uploaded successfully\n";
-    _disconnect();
+    m_disconnect();
 }
 
 void COSDConn::upload_params(const std::string &filename)
 {
-    if(!_try_connect()){
+    if(!m_connect()){
         return;
     }
 
-    _sync();
+    m_sync();
 
     COSDParam osdparams;
     uint8_t paramsbuf[PARAMS_BUF_SIZE];
@@ -176,9 +176,9 @@ void COSDConn::upload_params(const std::string &filename)
     }
 
     std::cout << "OK! ... starting send parameters to board\n";
-    _send(START_TRANSFER);
-    _send(EOC);
-    _getSync();
+    m_send(START_TRANSFER);
+    m_send(EOC);
+    m_get_sync();
 
     uint8_t arr [PROG_MULTI_MAX];
     int32_t params_bytes_left = PARAMS_BUF_SIZE;
@@ -191,40 +191,40 @@ void COSDConn::upload_params(const std::string &filename)
             arr[i] = paramsbuf[params_idx];
             ++ params_idx;
         }
-        _send(SET_PARAMS);
-        _send(static_cast<uint8_t>(sequence_length));
-        _send(arr,sequence_length);
-        _send(EOC);
-        _getSync();
+        m_send(SET_PARAMS);
+        m_send(static_cast<uint8_t>(sequence_length));
+        m_send(arr,sequence_length);
+        m_send(EOC);
+        m_get_sync();
         params_bytes_left -= sequence_length;
     }
 
-    _send(END_TRANSFER);
-    _send(EOC);
-    _getSync();
+    m_send(END_TRANSFER);
+    m_send(EOC);
+    m_get_sync();
 
-    _send(SAVE_TO_EEPROM);
-    _send(EOC);
-    _getSync();
-    std::cout << "OK! ... parameters has been stored on the board\n";
+    m_send(SAVE_TO_EEPROM);
+    m_send(EOC);
+    m_get_sync();
+    std::cout << "OK! ... parameters stored on the board\n";
 }
 
 void COSDConn::get_params(const std::string &filename)
 {
-    if(!_try_connect()){
+    if(!m_connect()){
         return;
     }
 
-    _sync();
+    m_sync();
 
     COSDParam osdparams;
     uint8_t paramsbuf[PARAMS_BUF_SIZE];
     osdparams.get_default_params(paramsbuf);
 
     std::cout << "OK! ... getting parameters from board\n";
-    _send(GET_PARAMS);
-    _send(EOC);
-    //_recv(paramsbuf, PARAMS_BUF_SIZE);
+    m_send(GET_PARAMS);
+    m_send(EOC);
+    //m_recv(paramsbuf, PARAMS_BUF_SIZE);
 
     uint8_t arr [READ_MULTI_MAX];
     int32_t params_bytes_left = PARAMS_BUF_SIZE;
@@ -232,20 +232,20 @@ void COSDConn::get_params(const std::string &filename)
 
     while ( (params_bytes_left > 0) ){
         int32_t const sequence_length = quan::min(static_cast<int32_t>(PROG_MULTI_MAX),params_bytes_left);
-        _recv(arr, sequence_length);
+        m_recv(arr, sequence_length);
         for ( int32_t i = 0;i < sequence_length; ++i){
             paramsbuf[params_idx] = arr[i];
             ++ params_idx;
         }
         params_bytes_left -= sequence_length;
     }
-    //_getSync();   //bug - Fixme!
+    //m_get_sync();   //bug - Fixme!
 
     std::cout << "OK! ... saving parameters to file:" << filename << std::endl;
     osdparams.store_params_to_file(filename, paramsbuf);
 }
 
-bool COSDConn::_try_connect()
+bool COSDConn::m_connect()
 {
     std::cout << "trying to connect Playuav OSD board...\n";
     std::cout << "looking for likely ports...\n";
@@ -268,17 +268,16 @@ bool COSDConn::_try_connect()
                 }
             }catch(std::exception & e){
                 // any exception means try another port
-                _disconnect();
+                m_disconnect();
             }
         }
     }catch (std::exception & e){
-        std::cout << "_try_connect() with exception:" <<  e.what() << "'\n";
+        std::cout << "connect failed with :" <<  e.what() << "'\n";
     }
-
     return true;
 }
 
-void COSDConn::_disconnect()
+void COSDConn::m_disconnect()
 {
     if(m_sp != nullptr){
         m_sp->close();
@@ -287,65 +286,70 @@ void COSDConn::_disconnect()
         m_good = false;
     }
 }
-void COSDConn::_send(uint8_t c)
+void COSDConn::m_send(uint8_t c)
 {
-    _throw_if_not_connected();
+    m_throw_if_not_connected();
     m_sp->write(&c,1);
 }
 
-void COSDConn::_send( uint8_t const* arr, size_t len)
+void COSDConn::m_send( uint8_t const* arr, size_t len)
 {
-    _throw_if_not_connected();
+    m_throw_if_not_connected();
     m_sp->write(arr,len) ;
 }
 
-void COSDConn::_recv(uint8_t * arr, size_t count)
+void COSDConn::m_recv(uint8_t * arr, size_t count)
 {
-    _throw_if_not_connected();
+    m_throw_if_not_connected();
     if ( m_sp->read(arr,count) == -1){
         throw std::runtime_error("usb_to_osd read failed");
     }
 }
 
-int32_t COSDConn::_recv_int()
+int32_t COSDConn::m_recv_int()
 {
+   m_throw_if_not_connected();
     union{
         uint8_t arr[4];
         int32_t i;
     } u;
-    _recv(u.arr,4);
+    m_recv(u.arr,4);
     return u.i;
 }
 
-uint32_t COSDConn::_recv_uint()
+uint32_t COSDConn::m_recv_uint()
 {
+    m_throw_if_not_connected();
     union{
         uint8_t arr[4];
         uint32_t ui;
     } u;
-    _recv(u.arr,4);
+    m_recv(u.arr,4);
     return u.ui;
 }
 
-void COSDConn::_getSync()
+void COSDConn::m_get_sync()
 {
+   
     quan:: timer<> timer;
 
     while ( timer() < quan::time::s{7}){
+         m_throw_if_not_connected();
         if (m_sp->in_avail() > 1 ){
             break;
         }
     }
+     m_throw_if_not_connected();
     if ( m_sp->in_avail() < 2){
         throw std::runtime_error("get_sync : expected INSYNC");
     }
 
     uint8_t ch;
-    _recv(& ch);
+    m_recv(& ch);
     if ( ch != INSYNC){
         throw std::runtime_error("get_sync : expected INSYNC");
     }
-    _recv(&ch);
+    m_recv(&ch);
     switch (ch){
     case OK:
         return;
@@ -358,43 +362,53 @@ void COSDConn::_getSync()
     }
 }
 
-void COSDConn::_sync()
+void COSDConn::m_sync()
 {
+    m_throw_if_not_connected();
     uint8_t const sync_cmd [] = {GET_SYNC, EOC};
-    _send(sync_cmd,2);
-    _getSync();
+    m_send(sync_cmd,2);
+    m_get_sync();
 }
 
-int32_t COSDConn::_get_board_max_flash_size()
+int32_t COSDConn::m_get_board_max_flash_size()
 {
+    m_throw_if_not_connected();
     uint8_t const cmd [] = { GET_DEVICE, INFO_FLASH_SIZE, EOC};
-    _send(cmd,3);
-    int32_t result = _recv_int();
-    _getSync();
+    m_send(cmd,3);
+    int32_t result = m_recv_int();
+    m_get_sync();
     return result;
 }
 
-uint32_t COSDConn::_get_board_crc()
+uint32_t COSDConn::m_get_board_crc()
 {
+  m_throw_if_not_connected();
     uint8_t const cmd [] = {GET_CRC, EOC};
-    _send(cmd,2);
-    uint32_t result = _recv_uint();
-    _getSync();
+    m_send(cmd,2);
+    uint32_t result = m_recv_uint();
+    m_get_sync();
     return result;
 }
 
 
 // works  in bl or app
-void COSDConn::_reset_to_bootloader()
+void COSDConn::m_reset_to_bootloader()
 {
+  m_throw_if_not_connected();
     uint8_t const cmd [] = {PROTO_BL_UPLOAD, EOC};
-    _send(cmd,2);
-    _getSync();
+    m_send(cmd,2);
+    m_get_sync();
     quan::timer<> t;
-    while (m_sp->in_avail()){
+    while (1){
+      m_throw_if_not_connected();
+       if (m_sp->in_avail()){
         uint8_t ch;
-        _recv(&ch);
+        m_recv(&ch);
+       }else{
+         break;
+       }
     }
+    m_throw_if_not_connected();
     m_sp->flush();
     while (t() < quan::time::ms{1000}) {;}
     if( !m_sp->good()){
@@ -404,36 +418,39 @@ void COSDConn::_reset_to_bootloader()
 
 // bootloader doesnt program reset vector
 // until you send the reboot command
-void COSDConn::_reboot_to_app()
+void COSDConn::m_reboot_to_app()
 {
+    m_throw_if_not_connected();
     uint8_t const cmd [] = {REBOOT, EOC};
-    _send(cmd,2);
-    _getSync();
+    m_send(cmd,2);
+    m_get_sync();
 }
 
-void COSDConn::_erase()
+void COSDConn::m_erase()
 {
+    m_throw_if_not_connected();
     m_sp->flush();
-    _sync();
+    m_sync();
     uint8_t arr []= {CHIP_ERASE,EOC};
-    _send(arr,2);
+    m_send(arr,2);
     quan::timer<> t;
     while ( t() < quan::time::s{20}){
+        m_throw_if_not_connected();
         if (m_sp->in_avail() > 0 ){
             break;
         }
     }
-    _getSync();
+    m_get_sync();
 }
 
-bool COSDConn::_connected()
+bool COSDConn::m_connected() const
 {
     return m_good && m_sp->good();
 }
 
-void COSDConn::_throw_if_not_connected()
+void COSDConn::m_throw_if_not_connected()
 {
-    if(!_connected()){
+    if(!m_connected()){
         throw std::runtime_error("not connected");
     }
 }
