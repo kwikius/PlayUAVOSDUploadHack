@@ -21,11 +21,18 @@
 #  Andy Little
 #  Tom Ren
 
+APPNAME = playuavosd-util
+
+ifneq ($(MAKECMDGOALS),clean)
+ifeq ($(QUAN_ROOT),)
+$(error ERROR: to build $(APPNAME) Requires QUAN_ROOT to be set to the path to quan library available \
+ at https://github.com/kwikius/quan-trunk. Either export or 'make QUAN_ROOT=<path to quan>')
+endif
+endif
+
 INCLUDES = $(QUAN_ROOT)
 CC = g++
 LD = g++
-
-APPNAME = playuavosd-util
 
 INCLUDE_ARGS = $(patsubst %,-I%,$(INCLUDES))
 CFLAGS = -std=c++11 -Wall
@@ -38,6 +45,7 @@ all: $(APPNAME)
 
 $(APPNAME) : $(objects)
 	$(LD) $(objects) -o $(APPNAME)
+	./$(APPNAME)
 
 $(local_objects) : %.o : %.cpp
 	$(CC) $(CFLAGS) $(INCLUDE_ARGS) -c $< -o $@

@@ -64,7 +64,7 @@ int main(int argc, const char* argv[])
 
     if ( ( argc < 2) ) {
         usage(argv[0]);
-        return EXIT_FAILURE;
+        return EXIT_SUCCESS;
     }
 
     try{
